@@ -1,0 +1,31 @@
+# Agents (local only)
+AGENTS.md
+CLAUDE.md
+.claude/
+.codex/
+.cursor/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# Data, models, run outputs
+data/
+models/
+runs/
+*.parquet
+*.npy
+*.faiss
+
+# Secrets
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
