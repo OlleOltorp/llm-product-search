@@ -14,9 +14,9 @@ __pycache__/
 .ruff_cache/
 
 # Data, models, run outputs
-data/
-models/
-runs/
+/data/
+/models/
+/runs/
 *.parquet
 *.npy
 *.faiss
