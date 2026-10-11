@@ -264,9 +264,7 @@ def load_wands(data_dir: Path = DEFAULT_DATA_DIR) -> WandsData:
     return WandsData(products=products, queries=queries, labels=labels)
 
 
-def product_texts(
-    products: pd.DataFrame, fields: Sequence[str] = DEFAULT_TEXT_FIELDS
-) -> Products:
+def product_texts(products: pd.DataFrame, fields: Sequence[str] = DEFAULT_TEXT_FIELDS) -> Products:
     """Join the chosen fields into one text per product.
 
     Fields are joined in the given order, one per line, skipping empty ones.
@@ -286,9 +284,7 @@ def product_texts(
     if unknown:
         raise ValueError(f"Unknown fields {sorted(unknown)}; choose from {TEXT_FIELDS}")
 
-    columns = [
-        products[f].map(", ".join) if f == "categories" else products[f] for f in fields
-    ]
+    columns = [products[f].map(", ".join) if f == "categories" else products[f] for f in fields]
     texts = ["\n".join(part for part in parts if part) for parts in zip(*columns, strict=True)]
     return dict(zip(products["product_id"], texts, strict=True))
 
