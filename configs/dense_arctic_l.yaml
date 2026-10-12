@@ -1,0 +1,9 @@
+name: dense_arctic_l
+model: Snowflake/snowflake-arctic-embed-l-v2.0
+revision: ac6544c8a46e00af67e330e85a9028c66b8cfd9a
+fields: [name, categories, category_path, description]
+query_prompt: "query: "
+document_prompt: ""
+max_seq_length: 512
+dtype: float32
+batch_size: 32

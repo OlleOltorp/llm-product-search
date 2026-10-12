@@ -1,0 +1,13 @@
+name: dense_inf_15b
+model: infly/inf-retriever-v1-1.5b
+revision: 476f2840b314cce3ef5a1de240012069c55687fa
+fields: [name, categories, category_path, description]
+query_prompt: "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: "
+document_prompt: ""
+max_seq_length: 512
+dtype: bfloat16
+batch_size: 16
+# The repo code needs transformers 4.x; run with:
+#   uv run --extra cu130 --with torch==2.14.1+cu130 --with transformers==4.57.1
+#   --with sentence-transformers==5.1.2 --index https://download.pytorch.org/whl/cu130 ...
+trust_remote_code: true

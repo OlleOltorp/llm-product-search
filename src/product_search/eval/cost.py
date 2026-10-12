@@ -100,6 +100,15 @@ def peak_ram_gb() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
 
 
+def peak_gpu_gb() -> float | None:
+    """Peak GPU memory allocated by torch in this process, in GB; None without a GPU."""
+    import torch
+
+    if not torch.cuda.is_available():
+        return None
+    return torch.cuda.max_memory_allocated() / 1e9
+
+
 def thread_settings() -> dict[str, str]:
     """Thread-count environment variables that affect timing."""
     names = ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "NUMBA_NUM_THREADS")

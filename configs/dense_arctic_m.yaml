@@ -1,0 +1,10 @@
+name: dense_arctic_m
+model: Snowflake/snowflake-arctic-embed-m-v2.0
+revision: 95c2741480856aa9666782eb4afe11959938017f
+fields: [name, categories, category_path, description]
+query_prompt: "query: "
+document_prompt: ""
+max_seq_length: 512
+dtype: float32
+batch_size: 32
+# Loads with the GTE model built into transformers 5; the repo's own code no longer runs.

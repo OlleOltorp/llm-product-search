@@ -11,7 +11,15 @@ dependencies = [
     "pyarrow>=17",
     "pystemmer>=3.1.0",
     "pyyaml>=6.0.3",
+    "sentence-transformers>=6.1.0",
+    "transformers>=5.19.0",
 ]
+
+# torch comes from the PyTorch index: `uv sync --extra cu130` on the GPU
+# machine, `uv sync --extra cpu` elsewhere.
+[project.optional-dependencies]
+cpu = ["torch>=2.14.1"]
+cu130 = ["torch>=2.14.1"]
 
 [dependency-groups]
 dev = [
@@ -25,6 +33,25 @@ dev = [
     "types-psutil>=7.2.2.20260906",
     "types-pyyaml>=6.0.12.20260906",
 ]
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cu130" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu130", extra = "cu130" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
 
 [build-system]
 requires = ["hatchling"]

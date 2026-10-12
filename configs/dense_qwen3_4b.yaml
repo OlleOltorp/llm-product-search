@@ -1,0 +1,9 @@
+name: dense_qwen3_4b
+model: Qwen/Qwen3-Embedding-4B
+revision: 5cf2132abc99cad020ac570b19d031efec650f2b
+fields: [name, categories, category_path, description]
+query_prompt: "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+document_prompt: ""
+max_seq_length: 512
+dtype: bfloat16
+batch_size: 8

@@ -1,0 +1,9 @@
+name: dense_bge_small
+model: BAAI/bge-small-en-v1.5
+revision: 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+fields: [name, categories, category_path, description]
+query_prompt: "Represent this sentence for searching relevant passages: "
+document_prompt: ""
+max_seq_length: 512
+dtype: float32
+batch_size: 64

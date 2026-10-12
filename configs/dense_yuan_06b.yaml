@@ -1,0 +1,9 @@
+name: dense_yuan_06b
+model: IEITYuan/Yuan-embedding-2.0-en
+revision: 78cf57002fc6dce8050ae52f64d56a60992cf689
+fields: [name, categories, category_path, description]
+query_prompt: "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+document_prompt: ""
+max_seq_length: 512
+dtype: bfloat16
+batch_size: 32

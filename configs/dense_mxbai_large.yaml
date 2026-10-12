@@ -1,0 +1,9 @@
+name: dense_mxbai_large
+model: mixedbread-ai/mxbai-embed-large-v1
+revision: b33106f585b9ce46904ad7443a3b52b7a63e231c
+fields: [name, categories, category_path, description]
+query_prompt: "Represent this sentence for searching relevant passages: "
+document_prompt: ""
+max_seq_length: 512
+dtype: float32
+batch_size: 32
