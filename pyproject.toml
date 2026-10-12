@@ -4,10 +4,13 @@ version = "0.1.0"
 description = "First-stage product retrieval on WANDS: BM25, embeddings and LLMs."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "bm25s>=0.3.13",
     "numpy>=2.5.4",
     "pandas>=2.2",
     "psutil>=7.2.2",
     "pyarrow>=17",
+    "pystemmer>=3.1.0",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
@@ -20,6 +23,7 @@ dev = [
     "pytest>=8.3",
     "ruff>=0.8",
     "types-psutil>=7.2.2.20260906",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [build-system]
@@ -43,3 +47,7 @@ select = ["E", "F", "I", "B", "UP"]
 python_version = "3.12"
 disallow_untyped_defs = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["bm25s", "bm25s.*", "Stemmer"]
+ignore_missing_imports = true

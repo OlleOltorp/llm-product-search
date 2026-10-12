@@ -1,0 +1,7 @@
+name: bm25_default
+fields: [name, categories, category_path, description]
+stemming: true
+stopwords: true
+min_word_length: 2
+k1: 0.9
+b: 0.4

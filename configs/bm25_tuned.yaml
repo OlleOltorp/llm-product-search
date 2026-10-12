@@ -1,0 +1,12 @@
+name: bm25_tuned
+fields:
+- name
+- categories
+- category_path
+- description
+- features
+stemming: true
+stopwords: true
+min_word_length: 2
+k1: 1.5
+b: 0.2
