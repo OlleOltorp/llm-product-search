@@ -33,6 +33,7 @@ def test_config_round_trip(tmp_path: Path) -> None:
         revision="abc123",
         query_prompt="Instruct: find\nQuery:",
         config_kwargs={"unpad_inputs": False},
+        model_kwargs={"device_map": "auto", "max_memory": {0: "10GiB", "cpu": "48GiB"}},
     )
     path = tmp_path / "dense.yaml"
     save_dense_config(path, "dense_test", config)

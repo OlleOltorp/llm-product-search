@@ -1,0 +1,11 @@
+name: dense_pplx_4b
+model: perplexity-ai/pplx-embed-v1-4b
+revision: 06456497a00540a582918fe8dcd3a5eabb207772
+fields: [name, categories, category_path, description]
+# No instruction by design; outputs int8 vectors, compared by cosine.
+query_prompt: ""
+document_prompt: ""
+max_seq_length: 512
+dtype: bfloat16
+batch_size: 8
+trust_remote_code: true

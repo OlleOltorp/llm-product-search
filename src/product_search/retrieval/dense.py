@@ -37,6 +37,8 @@ class DenseConfig:
         batch_size: Product texts per encoding batch.
         trust_remote_code: Run model code from the model repo (pinned by revision).
         config_kwargs: Overrides for the model's config.json.
+        model_kwargs: Extra loading options, e.g. device_map and max_memory to
+            keep part of a model too large for the GPU in system RAM.
     """
 
     model: str
@@ -49,6 +51,7 @@ class DenseConfig:
     batch_size: int = 32
     trust_remote_code: bool = False
     config_kwargs: dict[str, Any] = field(default_factory=dict)
+    model_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 def load_dense_config(path: Path) -> tuple[str, DenseConfig]:
@@ -79,12 +82,14 @@ def save_dense_config(path: Path, name: str, config: DenseConfig) -> None:
 
 def load_model(config: DenseConfig, device: str) -> SentenceTransformer:
     """Load the pinned model in the configured dtype with the length cap applied."""
+    model_kwargs = {"dtype": DTYPES[config.dtype]} | config.model_kwargs
     model = SentenceTransformer(
         config.model,
         revision=config.revision,
-        device=device,
+        # With a device_map, accelerate places the layers itself.
+        device=None if "device_map" in model_kwargs else device,
         trust_remote_code=config.trust_remote_code,
-        model_kwargs={"dtype": DTYPES[config.dtype]},
+        model_kwargs=model_kwargs,
         config_kwargs=config.config_kwargs or None,
     )
     model.max_seq_length = config.max_seq_length

@@ -1,0 +1,19 @@
+name: dense_inf_7b
+model: infly/inf-retriever-v1
+revision: 6c5b3f3156c0a705e30608f8ef6375d965b0f18f
+fields: [name, categories, category_path, description]
+query_prompt: "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: "
+document_prompt: ""
+max_seq_length: 512
+dtype: bfloat16
+batch_size: 8
+# The repo code needs transformers 4.x; run with:
+#   uv run --extra cu130 --with torch==2.14.1+cu130 --with transformers==4.57.1
+#   --with sentence-transformers==5.1.2 --with bitsandbytes==0.50.2
+#   --index https://download.pytorch.org/whl/cu130 ...
+trust_remote_code: true
+# 14 GB in bf16 does not fit the 12 GB GPU; weights are loaded in 8-bit (~7.5 GB).
+model_kwargs:
+  quantization_config:
+    quant_method: bitsandbytes
+    load_in_8bit: true
