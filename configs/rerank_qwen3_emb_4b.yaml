@@ -1,0 +1,6 @@
+name: rerank_qwen3_emb_4b
+model: Qwen/Qwen3-Embedding-4B
+revision: 5cf2132abc99cad020ac570b19d031efec650f2b
+method: bi_encoder
+dense_config: configs/dense_qwen3_4b.yaml
+# Control: same base as Qwen3-Reranker-4B, but query and product embedded separately.

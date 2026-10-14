@@ -1,0 +1,20 @@
+name: rerank_qwen3_8b
+model: Qwen/Qwen3-Reranker-8B
+revision: 77d193c791ed757ca307ee72715aa132723da912
+method: yes_no
+# Prompt from the model card; same instruction as the dense Qwen3 runs.
+prefix: "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n"
+body: "<Instruct>: {instruction}\n<Query>: {query}\n<Document>: {document}"
+suffix: "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+instruction: "Given a web search query, retrieve relevant passages that answer the query"
+yes_token: "yes"
+no_token: "no"
+max_length: 640
+dtype: bfloat16
+batch_size: 4
+# 16 GB in bf16 does not fit the 12 GB GPU; weights are loaded in 8-bit (~8.5 GB).
+# Run with --with bitsandbytes==0.50.2.
+model_kwargs:
+  quantization_config:
+    quant_method: bitsandbytes
+    load_in_8bit: true

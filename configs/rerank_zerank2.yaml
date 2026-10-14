@@ -1,0 +1,9 @@
+name: rerank_zerank2
+model: zeroentropy/zerank-2-reranker
+revision: 5eae30d5ee3c6b2df2ef6d723bde45172d761c4c
+method: cross_encoder
+# Qwen3-4B yes/no reranker; sentence-transformers loads it natively, prompt template from the repo.
+# Scores are raw "yes" logits (ordering is all that matters here).
+max_length: 640
+dtype: bfloat16
+batch_size: 8

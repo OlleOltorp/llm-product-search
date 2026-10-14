@@ -1,0 +1,8 @@
+name: rerank_bge_v2_m3
+model: BAAI/bge-reranker-v2-m3
+revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+method: cross_encoder
+max_length: 512
+# bf16 as on the model card (FlagReranker use_fp16); fp32 is 2-3x slower.
+dtype: bfloat16
+batch_size: 32

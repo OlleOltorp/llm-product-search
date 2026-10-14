@@ -1,0 +1,8 @@
+name: rerank_mxbai_large
+model: mixedbread-ai/mxbai-rerank-large-v2
+revision: ca7e1ee484c37c0ddd8d178a9a5c33cec575c5e6
+method: cross_encoder
+# Qwen2.5 LLM reranker; sentence-transformers loads it natively, prompt template from the repo.
+max_length: 640
+dtype: bfloat16
+batch_size: 8

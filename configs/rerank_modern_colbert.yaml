@@ -1,0 +1,7 @@
+name: rerank_modern_colbert
+model: lightonai/GTE-ModernColBERT-v1
+revision: 25f6f7bb8237b7ae25ae1d9b805ce17c0d1cc639
+method: late_interaction
+# Loaded with sentence-transformers MultiVectorEncoder; document length raised from 300.
+max_length: 512
+batch_size: 32

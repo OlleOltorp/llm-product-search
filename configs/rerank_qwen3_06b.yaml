@@ -1,0 +1,14 @@
+name: rerank_qwen3_06b
+model: Qwen/Qwen3-Reranker-0.6B
+revision: e61197ed45024b0ed8a2d74b80b4d909f1255473
+method: yes_no
+# Prompt from the model card; same instruction as the dense Qwen3 runs.
+prefix: "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n"
+body: "<Instruct>: {instruction}\n<Query>: {query}\n<Document>: {document}"
+suffix: "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+instruction: "Given a web search query, retrieve relevant passages that answer the query"
+yes_token: "yes"
+no_token: "no"
+max_length: 640
+dtype: bfloat16
+batch_size: 32

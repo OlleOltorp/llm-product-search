@@ -1,0 +1,6 @@
+name: rerank_inf_7b
+model: infly/inf-retriever-v1
+revision: 6c5b3f3156c0a705e30608f8ef6375d965b0f18f
+method: bi_encoder
+dense_config: configs/dense_inf_7b.yaml
+# Same overlay as dense_inf_7b (transformers 4.57.1, bitsandbytes).

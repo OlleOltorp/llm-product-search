@@ -1,0 +1,17 @@
+name: rerank_lychee_l
+model: KaLM-Embedding/KaLM-Reranker-V1-Large-R2
+revision: a862dd8581d4cb1b686b5c595c08be405129656c
+method: cross_encoder
+# Lychee (KaLM-Reranker-V1): encoder reads the product, decoder reads the instruction and query.
+# The repo code needs sentence-transformers >=5.6,<6; run with --with "sentence-transformers>=5.6,<6".
+instruction: "Given a web search query, retrieve relevant passages that answer the query"
+max_length: 1024
+dtype: bfloat16
+batch_size: 8
+trust_remote_code: true
+model_kwargs:
+  chunk_size: 4
+  # 15 GB in bf16 does not fit the 12 GB GPU; weights are loaded in 8-bit.
+  quantization_config:
+    quant_method: bitsandbytes
+    load_in_8bit: true

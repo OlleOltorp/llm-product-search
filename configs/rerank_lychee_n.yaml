@@ -1,0 +1,13 @@
+name: rerank_lychee_n
+model: KaLM-Embedding/KaLM-Reranker-V1-Nano-R2
+revision: 32b242bb7fd7ad6fd404154c09560d249ffe017f
+method: cross_encoder
+# Lychee (KaLM-Reranker-V1): encoder reads the product, decoder reads the instruction and query.
+# The repo code needs sentence-transformers >=5.6,<6; run with --with "sentence-transformers>=5.6,<6".
+instruction: "Given a web search query, retrieve relevant passages that answer the query"
+max_length: 1024
+dtype: bfloat16
+batch_size: 32
+trust_remote_code: true
+model_kwargs:
+  chunk_size: 4
