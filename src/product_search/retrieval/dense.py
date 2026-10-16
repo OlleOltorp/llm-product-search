@@ -157,6 +157,14 @@ class DenseRetriever:
             raise RuntimeError("Call index() before save()")
         np.save(path / "embeddings.npy", self._embeddings.cpu().numpy())
 
+    def load(self, path: Path, product_ids: list[str]) -> None:
+        """Read embeddings written by save(), in the order of product_ids."""
+        embeddings = torch.from_numpy(np.load(path / "embeddings.npy")).to(self.device)
+        if len(embeddings) != len(product_ids):
+            raise ValueError(f"{path}: {len(embeddings)} embeddings for {len(product_ids)} ids")
+        self._product_ids = list(product_ids)
+        self._embeddings = embeddings
+
     def search(self, queries: Queries, k: int) -> Results:
         """Return the top k products per query."""
         if self._embeddings is None:

@@ -1,0 +1,8 @@
+# P1 likely queries with an instruction model (model from generators.yaml).
+name: expand_p1
+target: products
+kind: chat
+parse: lines
+prompt: "Here is a product from an online furniture and home goods store.\n\n{text}\n\nWrite 20 different search queries a shopper might type to find this product. Keep each query short (2 to 6 words), vary the wording and use everyday words. Write one query per line, with no numbering and nothing else."
+max_input_tokens: 384
+max_new_tokens: 240

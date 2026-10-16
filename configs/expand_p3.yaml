@@ -1,0 +1,8 @@
+# P3 attributes (WDC-PAVE style extraction); only known values are kept for search.
+name: expand_p3
+target: products
+kind: chat
+parse: key_value
+prompt: "Here is a product from an online furniture and home goods store.\n\n{text}\n\nDescribe the product with these attributes, one per line as 'attribute: value': type, colour, material, style, room, shape. Write 'unknown' if the text does not say or clearly imply it. Write nothing else."
+max_input_tokens: 384
+max_new_tokens: 80

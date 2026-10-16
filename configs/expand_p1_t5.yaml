@@ -1,0 +1,15 @@
+# P1 likely queries, paper baseline: docTTTTTquery (Nogueira & Lin 2019),
+# T5-base trained on MS MARCO (non-commercial data licence), 40 sampled queries per passage, top-k 10.
+name: expand_p1_t5
+target: products
+kind: seq2seq
+parse: lines
+model: castorini/doc2query-t5-base-msmarco
+revision: 53926b5364548f0c81b39a31723184d3664aaf06
+max_input_tokens: 512
+max_new_tokens: 64
+num_samples: 40
+top_k: 10
+dtype: bfloat16
+batch_size: 8
+dedupe: false  # docTTTTTquery appends all samples, repeats included

@@ -1,0 +1,46 @@
+# Chat models for expansion, one family so size is the only change.
+# Thinking is switched off in the chat template (enable_thinking=False).
+qwen3_0.6b:
+  model: Qwen/Qwen3-0.6B
+  revision: c1899de289a04d12100db370d81485cdf75e47ca
+  dtype: bfloat16
+  batch_size: 64
+qwen3_1.7b:
+  model: Qwen/Qwen3-1.7B
+  revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+  dtype: bfloat16
+  batch_size: 64
+qwen3_4b:
+  model: Qwen/Qwen3-4B
+  revision: 1cfa9a7208912126459214e8b04321603b3df60c
+  dtype: bfloat16
+  batch_size: 32
+qwen3_8b:
+  # 16 GB in bf16 does not fit the 12 GB GPU; 8-bit is ~9 GB.
+  model: Qwen/Qwen3-8B
+  revision: b968826d9c46dd6066d109eabc6255188de91218
+  dtype: bfloat16
+  batch_size: 32
+  model_kwargs:
+    quantization_config:
+      quant_method: bitsandbytes
+      load_in_8bit: true
+qwen3_8b_awq:
+  # Official 4-bit AWQ build on a vLLM server (scripts/serve_vllm.ps1).
+  # The 8-bit bitsandbytes model above ran at 6-16 tokens/s in transformers.
+  model: Qwen/Qwen3-8B-AWQ
+  revision: 4da05a8edb55c6046cce958586c33b61da07bb79
+  engine: vllm
+  batch_size: 128
+qwen3_14b:
+  # 4-bit (~9 GB); 8-bit would not fit.
+  model: Qwen/Qwen3-14B
+  revision: 40c069824f4251a91eefaf281ebe4c544efd3e18
+  dtype: bfloat16
+  batch_size: 16
+  model_kwargs:
+    quantization_config:
+      quant_method: bitsandbytes
+      load_in_4bit: true
+      bnb_4bit_quant_type: nf4
+      bnb_4bit_compute_dtype: bfloat16

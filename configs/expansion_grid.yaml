@@ -1,0 +1,23 @@
+# Every product x query expansion combination on BM25, dense and hybrid (query generator: Qwen3-4B).
+# Products by Qwen3-8B-AWQ on vLLM; 8-bit bitsandbytes was too slow (6-16 tokens/s).
+name: expansion_grid_qwen3_4b
+retrievers:
+  bm25: bm25_default
+  inf15: dense_inf_15b
+  arcticm: dense_arctic_m
+systems:
+  bm25: [bm25]
+  dense: [inf15, arcticm]
+  hybrid: [bm25, inf15, arcticm]
+p1:  # one generator at a time
+  p1_t5: expand_p1_t5_filtered
+  p1_t5all: expand_p1_t5all_filtered
+  p1_qwen: expand_p1_qwen3_8b_awq_filtered
+products:
+  p2: expand_p2_qwen3_8b_awq
+  p3: expand_p3_qwen3_8b_awq
+queries:
+  q1: expand_q1_qwen3_4b
+  q2: expand_q2_qwen3_4b
+  q3: expand_q3_qwen3_4b
+  q4: expand_q4_qwen3_4b

@@ -1,0 +1,7 @@
+# Q2 attributes (query-to-attribute rewriting, as in e-commerce query understanding).
+name: expand_q2
+target: queries
+kind: chat
+parse: key_value
+prompt: "A shopper typed this search into an online furniture and home goods store: \"{query}\"\n\nDescribe the product they want with these attributes, one per line as 'attribute: value': type, colour, material, style, room, shape. Leave out attributes the search does not say or clearly imply. Write nothing else."
+max_new_tokens: 60

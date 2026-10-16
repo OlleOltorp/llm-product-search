@@ -1,0 +1,7 @@
+# Q1 keywords (Jagerman et al. 2023, keyword-style expansion).
+name: expand_q1
+target: queries
+kind: chat
+parse: comma
+prompt: "A shopper typed this search into an online furniture and home goods store: \"{query}\"\n\nList up to 10 keywords and synonyms that products matching this search are likely to contain. Write them comma-separated on one line, with nothing else."
+max_new_tokens: 60

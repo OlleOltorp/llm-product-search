@@ -80,6 +80,28 @@ def paired_permutation_test(
     return float(observed), float((extreme + 1) / (n_permutations + 1))
 
 
+def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
+    """Benjamini-Hochberg adjusted p-values (q-values).
+
+    With many tests, some p < 0.05 by chance. Keeping the tests with
+    q < 0.05 keeps the expected share of false findings among them below 5%.
+
+    Args:
+        p_values: One p-value per test.
+
+    Returns:
+        q-values in the same order and index.
+    """
+    p = p_values.to_numpy(dtype=float)
+    order = np.argsort(p)
+    ranked = p[order] * len(p) / np.arange(1, len(p) + 1)
+    # Each q is the smallest ranked value at or above its position, capped at 1.
+    q = np.minimum.accumulate(ranked[::-1])[::-1].clip(max=1.0)
+    out = np.empty_like(q)
+    out[order] = q
+    return pd.Series(out, index=p_values.index)
+
+
 def summarise_metrics(
     per_query: pd.DataFrame, n_resamples: int = N_RESAMPLES, seed: int = 0
 ) -> dict[str, dict[str, float]]:

@@ -1,0 +1,8 @@
+# P2 missing keywords, after Walmart's Doc2Token: only words not already in the product text.
+name: expand_p2
+target: products
+kind: chat
+parse: comma
+prompt: "Here is a product from an online furniture and home goods store.\n\n{text}\n\nList up to 15 search keywords for this product that do not already appear in the text: synonyms, other names for the product type, and words for the room, style and use. Write them comma-separated on one line, with nothing else."
+max_input_tokens: 384
+max_new_tokens: 80

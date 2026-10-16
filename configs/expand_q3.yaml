@@ -1,0 +1,7 @@
+# Q3 pseudo-product (query2doc / HyDE style).
+name: expand_q3
+target: queries
+kind: chat
+parse: text
+prompt: "A shopper typed this search into an online furniture and home goods store: \"{query}\"\n\nWrite a short product title and a one or two sentence description for a product that matches this search. Write nothing else."
+max_new_tokens: 100

@@ -1,0 +1,8 @@
+# Q4 grounded keywords (LameR / CSQE style): Q1 with the first stage's top-5 product titles in the prompt.
+name: expand_q4
+target: queries
+kind: chat
+parse: comma
+prompt: "A shopper typed this search into an online furniture and home goods store: \"{query}\"\n\nThe store's search returned these products first:\n{titles}\n\nList up to 10 keywords and synonyms that products matching this search are likely to contain. Write them comma-separated on one line, with nothing else."
+max_new_tokens: 60
+grounding_k: 5

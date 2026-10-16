@@ -1,0 +1,14 @@
+# P1 likely queries: doc2query T5-base trained on many datasets (sentence-transformers doc2query family).
+name: expand_p1_t5all
+target: products
+kind: seq2seq
+parse: lines
+model: doc2query/all-t5-base-v1
+revision: 28d82c068119c6cf21945bfa8d91ce1dcbdfdf8d
+max_input_tokens: 512
+max_new_tokens: 64
+num_samples: 40
+top_k: 10
+dtype: bfloat16
+batch_size: 8
+dedupe: false  # docTTTTTquery appends all samples, repeats included
