@@ -1,6 +1,6 @@
-"""Run one dense config on the dev queries and score it.
+"""Run one dense config on the dev (or, once, test) queries and score it.
 
-Creates runs/<name>/ with the config, the top 1,000 products per dev query,
+Creates runs/<name>/ with the config, the top 1,000 products per query,
 meta.json (git, machine, load and indexing time, index size, memory,
 optional latency) and the dev metrics.
 
@@ -39,23 +39,31 @@ from product_search.runs import (
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run one dense config on dev.")
+    parser = argparse.ArgumentParser(description="Run one dense config on dev or test.")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--timing", action="store_true", help="Measure per-query latency.")
     parser.add_argument("--force", action="store_true", help="Overwrite an existing run.")
+    parser.add_argument("--split", choices=("dev", "test"), default="dev")
+    parser.add_argument("--confirm-test", action="store_true")
     args = parser.parse_args()
+    if args.split == "test" and not args.confirm_test:
+        parser.error("The test set is used once, at the end. Add --confirm-test to use it.")
+    if args.split == "test" and args.timing:
+        parser.error("Latency is measured on dev only.")
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     name, config = load_dense_config(args.config)
-    run_dir = create_run_dir(name, force=args.force)
+    # Test results go to their own run, next to the dev run.
+    run_name = name if args.split == "dev" else f"{name}_test"
+    run_dir = create_run_dir(run_name, force=args.force)
     save_dense_config(run_dir / "config.yaml", name, config)
 
     data = load_wands()
-    dev = load_split().dev
+    query_ids = getattr(load_split(), args.split)
     products = product_texts(data.products, config.fields)
     queries = query_texts(data.queries)
-    dev_queries = {q: queries[q] for q in dev}
+    split_queries = {q: queries[q] for q in query_ids}
 
     with timed() as loading:
         retriever = DenseRetriever(config)
@@ -66,13 +74,13 @@ def main() -> None:
         index_size = dir_size_mb(Path(tmp))
 
     start = time.perf_counter()
-    results = retriever.search(dev_queries, RESULT_DEPTH)
+    results = retriever.search(split_queries, RESULT_DEPTH)
     batch_seconds = time.perf_counter() - start
     save_results(results, run_dir / "results.parquet")
 
     latency = None
     if args.timing:
-        texts = list(dev_queries.values())
+        texts = list(split_queries.values())
         sync = torch.cuda.synchronize if torch.cuda.is_available() else None
         latency = latency_summary(
             time_queries(lambda text: retriever.search({"q": text}, RESULT_DEPTH), texts, sync=sync)
@@ -82,7 +90,7 @@ def main() -> None:
         "load_seconds": loading["seconds"],
         "indexing_seconds": indexing["seconds"],
         "index_size_mb": index_size,
-        "batch_queries_per_second": len(dev) / batch_seconds,
+        "batch_queries_per_second": len(query_ids) / batch_seconds,
         "latency": latency,
         "peak_ram_gb": peak_ram_gb(),
         "peak_gpu_gb": peak_gpu_gb(),
@@ -91,9 +99,9 @@ def main() -> None:
         {"git": git_info(), "machine": machine_info(), "timed": args.timing, "cost": cost},
         run_dir / "meta.json",
     )
-    summary = evaluate_run(run_dir, "dev")
+    summary = evaluate_run(run_dir, args.split)
 
-    print(f"{name} on dev ({len(dev)} queries)")
+    print(f"{run_name} on {args.split} ({len(query_ids)} queries)")
     print(format_summary(summary))
     print(f"  indexing {indexing['seconds']:.1f}s, index {index_size:.0f} MB")
     if latency is not None:

@@ -22,6 +22,7 @@ from product_search.retrieval.dense import DenseRetriever, load_dense_config
 from product_search.retrieval.fusion import rrf
 from product_search.retrieval.rerank import FIRST_STAGE
 from product_search.runs import REPO_DIR, RUNS_DIR, load_results
+from product_search.types import Results
 
 LISTS_DIR = RUNS_DIR / "lists"
 APPEND_DIR = LISTS_DIR / "append"
@@ -55,13 +56,23 @@ def first_stage_titles(
 ) -> dict[str, list[str]]:
     """Names of the top k products per query in the fused first stage (Q4 grounding).
 
-    Queries without first-stage results (the base runs cover dev only so far)
-    are left out.
+    Test queries are covered once every first-stage run has its test run
+    (<run>_test); until then they are left out.
     """
     names = dict(zip(products["product_id"], products["name"], strict=True))
-    fused = rrf([load_results(RUNS_DIR / run / "results.parquet") for run in FIRST_STAGE])
+    # All or none: a test query fused from only some retrievers would be grounded differently.
+    with_test = all((RUNS_DIR / f"{run}_test" / "results.parquet").exists() for run in FIRST_STAGE)
+    fused = rrf([_base_results(run, with_test) for run in FIRST_STAGE])
     top = rank({q: fused[q] for q in query_ids if q in fused}, k)
     return {q: [names[p] for p in ranking] for q, ranking in top.items()}
+
+
+def _base_results(run: str, with_test: bool) -> Results:
+    """A base run's dev results, plus its test run's when with_test."""
+    results = load_results(RUNS_DIR / run / "results.parquet")
+    if with_test:
+        results |= load_results(RUNS_DIR / f"{run}_test" / "results.parquet")
+    return results
 
 
 def load_source(run: str) -> tuple[str, dict[str, str]]:

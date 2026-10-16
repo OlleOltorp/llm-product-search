@@ -8,6 +8,8 @@ Usage:
     uv run python scripts/expand.py --config configs/expand_p1_t5.yaml
     uv run python scripts/expand.py --config configs/expand_p2.yaml --generator qwen3_8b
     uv run python scripts/expand.py --config configs/expand_q1.yaml --generator qwen3_4b --limit 20
+    uv run python scripts/expand.py --config configs/expand_q4.yaml --generator qwen3_0.6b \
+        --add-missing
 """
 
 import argparse
@@ -31,6 +33,7 @@ from product_search.expansion.generate import (
 from product_search.expansion.lists import first_stage_titles
 from product_search.runs import (
     REPO_DIR,
+    RUNS_DIR,
     create_run_dir,
     git_info,
     machine_info,
@@ -47,14 +50,27 @@ def main() -> None:
     parser.add_argument("--generator", help="Model key in configs/generators.yaml.")
     parser.add_argument("--limit", type=int, help="Only n inputs (trial run, name gets _trial).")
     parser.add_argument("--force", action="store_true", help="Overwrite an existing run.")
+    parser.add_argument(
+        "--add-missing",
+        action="store_true",
+        help="Add only the inputs an existing run lacks (Q4 test queries, once the first "
+        "stage covers test); earlier outputs are kept as they are.",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     name, config = load_expansion_config(args.config, args.generator, GENERATORS)
     if args.limit is not None:
         name = f"{name}_trial"
-    run_dir = create_run_dir(name, force=args.force)
-    save_expansion_config(run_dir / "config.yaml", name, config)
+    existing = None
+    if args.add_missing:
+        run_dir = RUNS_DIR / name
+        if load_expansion_config(run_dir / "config.yaml")[1] != config:
+            raise ValueError(f"{name}: config differs from the existing run")
+        existing = pd.read_parquet(run_dir / "expansions.parquet")
+    else:
+        run_dir = create_run_dir(name, force=args.force)
+        save_expansion_config(run_dir / "config.yaml", name, config)
 
     data = load_wands()
     if config.target == "products":
@@ -68,6 +84,12 @@ def main() -> None:
         # the same outputs. A trial takes dev queries first.
         split = load_split()
         ids = (split.dev + split.test)[: args.limit]
+    if existing is not None:
+        done = set(existing["id"])
+        ids = [i for i in ids if i not in done]
+        if not ids:
+            print(f"{name}: nothing to add")
+            return
 
     with timed() as loading:
         generator = Generator(config)
@@ -89,9 +111,10 @@ def main() -> None:
     with timed() as generating:
         raw, new_tokens = generator.generate(inputs)
     cleaned = [clean(r, config.parse, config.dedupe) for r in raw]
-    pd.DataFrame({"id": ids, "raw": raw, "text": cleaned}).to_parquet(
-        run_dir / "expansions.parquet", index=False
-    )
+    table = pd.DataFrame({"id": ids, "raw": raw, "text": cleaned})
+    if existing is not None:
+        table = pd.concat([existing, table], ignore_index=True)
+    table.to_parquet(run_dir / "expansions.parquet", index=False)
 
     empty = sum(not t for t in cleaned) / len(cleaned)
     thinking = sum("<think>" in r for r in raw) / len(raw)
@@ -113,7 +136,7 @@ def main() -> None:
             "empty_share": empty,
             "think_share": thinking,
         },
-        run_dir / "meta.json",
+        run_dir / ("meta.json" if existing is None else "meta_added.json"),
     )
 
     print(f"{name}: {len(ids)} {config.target}")

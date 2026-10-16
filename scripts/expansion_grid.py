@@ -94,7 +94,8 @@ def main() -> None:
     retrievers: dict[str, str] = config["retrievers"]
     systems: dict[str, list[str]] = config["systems"]
     for retriever, run in retrievers.items():
-        bank.add(f"base__{retriever}", RUNS_DIR / run / "results.parquet")
+        base_run = run if args.split == "dev" else f"{run}_test"
+        bank.add(f"base__{retriever}", RUNS_DIR / base_run / "results.parquet")
         for key, source in expansion_keys(config).items():
             path = LISTS_DIR / f"{source}__{retriever}" / "results.parquet"
             if path.exists():

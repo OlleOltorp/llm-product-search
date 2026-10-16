@@ -17,6 +17,8 @@ so it runs in its own call with --retrievers inf15.
 Usage:
     uv run python scripts/expansion_lists.py --retrievers bm25 arcticm \
         --sources expand_p2_qwen3_8b expand_q1_qwen3_4b
+    uv run python scripts/expansion_lists.py --retrievers bm25 --sources expand_q4_qwen3_0.6b \
+        --add-missing
 """
 
 import argparse
@@ -32,7 +34,7 @@ from product_search.expansion.lists import (
     load_retriever,
     load_source,
 )
-from product_search.runs import RESULT_DEPTH, git_info, save_results, write_json
+from product_search.runs import RESULT_DEPTH, git_info, load_results, save_results, write_json
 
 
 def main() -> None:
@@ -40,6 +42,12 @@ def main() -> None:
     parser.add_argument("--retrievers", nargs="+", choices=list(RETRIEVERS), required=True)
     parser.add_argument("--sources", nargs="+", required=True, help="Expansion run names.")
     parser.add_argument("--force", action="store_true", help="Overwrite existing lists.")
+    parser.add_argument(
+        "--add-missing",
+        action="store_true",
+        help="Search only the queries an existing list lacks and add them; earlier "
+        "results are kept as they are.",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -59,25 +67,30 @@ def main() -> None:
         original_indexed = False
         for source, (target, texts) in sources.items():
             out = LISTS_DIR / f"{source}__{name}"
-            if (out / "results.parquet").exists() and not args.force:
+            exists = (out / "results.parquet").exists()
+            if exists and not (args.force or args.add_missing):
                 logging.info("%s exists, skipped", out.name)
+                continue
+            earlier = load_results(out / "results.parquet") if exists and args.add_missing else {}
+            if target == "products":
+                queries = {q: raw_queries[q] for q in query_ids}
+            else:
+                queries = {q: f"{raw_queries[q]}\n{texts[q]}" for q in query_ids if texts.get(q)}
+            queries = {q: text for q, text in queries.items() if q not in earlier}
+            if not queries:
+                logging.info("%s has every query, skipped", out.name)
                 continue
             with timed() as took:
                 if target == "products":
                     retriever.index({p: t for p, t in texts.items() if t})
-                    queries = {q: raw_queries[q] for q in query_ids}
-                else:
-                    if not original_indexed:
-                        retriever.index(product_texts(data.products, fields))
-                        original_indexed = True
-                    queries = {
-                        q: f"{raw_queries[q]}\n{texts[q]}" for q in query_ids if texts.get(q)
-                    }
-                results = retriever.search(queries, RESULT_DEPTH)
+                elif not original_indexed:
+                    retriever.index(product_texts(data.products, fields))
+                    original_indexed = True
+                results = earlier | retriever.search(queries, RESULT_DEPTH)
             out.mkdir(parents=True, exist_ok=True)
             save_results(results, out / "results.parquet")
             meta = {"mode": "separate", "source": source, "target": target, "retriever": name}
-            meta |= {"queries_searched": len(queries)}
+            meta |= {"queries_searched": len(results), "queries_added": len(queries)}
             write_json(meta | {"seconds": took["seconds"], "git": git_info()}, out / "meta.json")
             logging.info("%s: %.0fs", out.name, took["seconds"])
 
