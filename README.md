@@ -9,7 +9,7 @@
 [![Repo size](https://img.shields.io/github/repo-size/OlleOltorp/llm-product-search)](https://github.com/OlleOltorp/llm-product-search)
 [![Last commit](https://img.shields.io/github/last-commit/OlleOltorp/llm-product-search)](https://github.com/OlleOltorp/llm-product-search/commits/main)
 
-This started as preparation for a possible master's thesis in search. I wanted to test the leading open-source models from the benchmarks, try hybrid setups, and try add-ons such as rerankers and query and product expansion, to see what actually works on a mid-sized product catalogue and what doesn't. I also wanted it fast enough to use: everything is measured against a latency budget on one consumer GPU.
+This was exploratory preparation for a possible master's thesis in search. I wanted to test the leading open-source models from the benchmarks, try hybrid setups, and try add-ons such as rerankers and query and product expansion, to see what actually works on a mid-sized product catalogue and what doesn't. I also wanted it fast enough to use: everything is measured against a latency budget on one consumer GPU.
 
 ![Quality against latency for each stage](docs/img/overview.png)
 
