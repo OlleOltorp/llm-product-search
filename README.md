@@ -9,123 +9,109 @@
 [![Repo size](https://img.shields.io/github/repo-size/OlleOltorp/llm-product-search)](https://github.com/OlleOltorp/llm-product-search)
 [![Last commit](https://img.shields.io/github/last-commit/OlleOltorp/llm-product-search)](https://github.com/OlleOltorp/llm-product-search/commits/main)
 
-This was exploratory preparation for a possible master's thesis in search. I wanted to test the leading open-source models from the benchmarks, try hybrid setups, and try add-ons such as rerankers and query and product expansion, to see what actually works on a mid-sized product catalogue and what doesn't. I also wanted it fast enough to use: everything is measured against a latency budget on one consumer GPU.
-
-![Quality against latency for each stage](docs/img/overview.png)
-
-*Best setting at each stage, chosen on dev (hollow) and checked once on test (filled). Test queries score 2–3 points higher for every system, so compare systems within a split.*
+This was an exploratory study in preparation for a possible master's thesis in search. I tested the leading open-source models from different benchmarks, hybrid setups, and pipelines with rerankers and with query and product expansion. All models were used out of the box, but every setup was tested thoroughly on the key ranking metrics and on latency for production use.
 
 ## Results
 
-| Stage | Best setting | nDCG@10 dev | nDCG@10 test | p99 latency |
+![Quality against latency, each stage](docs/img/overview.png)
+
+*Best setting at each stage, chosen on dev (hollow) and checked once on test (filled). Figure 2 in [notebook 08](notebooks/08_test.ipynb).*
+
+| Stage | nDCG@10 (test) | Change | p99 latency | Kept |
 |---|---|---|---|---|
-| Keyword search | BM25, default settings | 0.691 | 0.710 | 1.3 ms |
-| Dense retrieval | inf-retriever-v1-1.5b | 0.759 | 0.786 | 28 ms |
-| Hybrid | BM25 + inf-1.5B + arctic-embed-m, reciprocal rank fusion | 0.780 | **0.804** | **37 ms** |
-| + reranker | zerank-2 on the top 10 | 0.789 | – | ~470 ms (est.) |
-| + expansion | product + query expansion, Qwen3-0.6B for queries | 0.794 | 0.808 | 467 ms |
+| BM25 | 0.710 | – | 1.3 ms | baseline |
+| + dense (inf-retriever-v1-1.5b) | 0.786 | +7.6 vs BM25 | 28 ms | ✓ |
+| + hybrid (BM25 + 2 dense models, RRF) | **0.804** | **+1.9 vs dense** | **37 ms** | ✓ |
+| + reranker (zerank-2) | dev only | +0.9 on dev | ~470 ms | ✗ too slow |
+| + LLM expansion | 0.808 | +0.3, not significant | 467 ms | ✗ |
 
-- **Hybrid search is the reliable win:** +1.9 nDCG@10 over the best single model on test (p = 0.002), for 37 ms.
-- **Expansion is a big win for BM25** (151 of 161 combinations still significant on test), but on top of the hybrid it did not improve the top 10 on test. It adds +1 to +2 points of recall in the top 100 instead, for ~470 ms.
-- Only 1 of 15 rerankers helped, and it costs most of the latency budget.
-- The MTEB leaderboard did not predict which embedding model would do best here.
-- The inference engine mattered more than model size: vLLM was ~70× faster than transformers for the same model.
+- Hybrid search gave the reliable gain: +1.9 nDCG@10 on test, 37 ms.
+- Rerankers and LLM expansion each cost ~10× the latency for at most one point, and the expansion gain did not hold on test.
+- LLM expansion helps plain BM25 a lot: 151 of 161 combinations still significantly better on test.
 
-All choices were made on 241 dev queries; the 239 test queries were used once, at the end ([notebook 08](notebooks/08_test.ipynb)). The reranker was dropped on dev and not run on test.
+*nDCG@10: quality of the top 10 results (0–1). Rcap@100: share of the right products found in the top 100. Change: test-set difference in points against the stage above (paired permutation test).*
 
-## Setup
+## How it was measured
 
 | | |
 |---|---|
-| Data | [WANDS](https://github.com/wayfair/WANDS) (Wayfair): 42,994 products, 480 real queries, 233,448 human labels (Exact / Partial / Irrelevant). Nearly every product is judged, so unusual but relevant hits are not punished. |
-| Split | 241 dev / 239 test queries, balanced by number of Exact matches, near-duplicates kept together |
-| Metrics | nDCG@10 (top-10 quality), Rcap@100 (recall in the top 100). Details in [docs/evaluation.md](docs/evaluation.md) |
-| Rule | A change is kept only if significantly better: paired permutation test, p < 0.05. Benjamini-Hochberg q-values when many settings are tested at once |
-| Hardware | Ryzen 9 7900X3D, 64 GB RAM, RTX 4070 12 GB. One query at a time, background apps closed |
-| Budget | p99 ≤ 50 ms for the first stage, ≤ 500 ms for the whole search |
+| Data | [WANDS](https://github.com/wayfair/WANDS) (Wayfair): 42,994 products, 480 real queries, 233,448 human labels |
+| Split | 241 dev queries for every choice, 239 test queries used once at the end |
+| Rule | Keep a change only if significantly better (p < 0.05; q-values when many settings are compared) |
+| Hardware | One RTX 4070 (12 GB), one query at a time. Budget: p99 ≤ 50 ms first stage, ≤ 500 ms in total |
 
 ## Steps
 
 ### 1. BM25 · [notebook 03](notebooks/03_bm25.ipynb)
 
-- 420 settings: fields, stemming, k1 and b.
-- Stemming (+4.5 Rcap@100) and the description field (+5.6) matter.
-- Tuning k1/b does not (best setting +1.6, p = 0.11). Kept the default.
+- 420 settings tried. Stemming (+4.5 Rcap@100) and the description field (+5.6) matter.
+- Tuning k1 and b does not help (+1.6, not significant), so we use the default.
+
+![BM25: Rcap@100 for every k1 and b](docs/img/bm25_k1_b.png)
+
+*Rcap@100 for every k1 and b. Every setting lands between 0.69 and 0.72, so we use the default (k1 0.9, b 0.4). Figure 2 in [notebook 03](notebooks/03_bm25.ipynb).*
 
 ### 2. Dense retrieval · [notebook 04](notebooks/04_dense.ipynb)
 
 - 11 off-the-shelf embedding models, 33M to 7B parameters.
-- 7 of 11 beat BM25 on nDCG@10; only 3 of 11 on Rcap@100.
-- Models that read text both ways all matched or beat BM25; left-to-right LLM embedders never did.
-- inf-retriever-v1-1.5b: best within 50 ms.
+- 7 of 11 beat BM25 on nDCG@10, only 3 of 11 on Rcap@100.
+- inf-retriever-v1-1.5b is the best model within 50 ms.
 
 ![Dense models, quality against latency](docs/img/dense_quality_latency.png)
 
-![MTEB score against WANDS score](docs/img/mteb_vs_wands.png)
+*Models significantly better than BM25 on at least one metric. Filled: significant on that metric. Figure 4 in [notebook 04](notebooks/04_dense.ipynb).*
 
-### 3. Hybrid (fusion) · [notebook 05](notebooks/05_fusion.ipynb)
+### 3. Hybrid · [notebook 05](notebooks/05_fusion.ipynb)
 
-- All 120 combinations of BM25 + 6 dense models, merged with RRF.
-- None found more relevant products than inf-1.5B alone, but several ranked the top 10 better.
-- Pick: BM25 + inf-1.5B + arctic-embed-m, +2.1 nDCG@10 (p = 0.004), 37 ms.
-- Adding BM25 raised nDCG@10 in all 63 dense sets. Tuned weights never beat plain RRF.
+- All 120 combinations of BM25 and 6 dense models, merged with reciprocal rank fusion (RRF).
+- No combination finds more right products than inf-1.5B alone, but several rank the top 10 better.
+- Pick: BM25 + inf-1.5B + arctic-embed-m, +2.1 nDCG@10 on dev, 37 ms.
 
-![The effect of adding BM25 to a set of dense models](docs/img/bm25_in_fusion.png)
+![Combinations against inf-1.5B](docs/img/fusion_vs_inf.png)
+
+*The 34 combinations within 50 ms against inf-1.5B alone (dashed). Green: significantly better, red: significantly worse. Figure 1 in [notebook 05](notebooks/05_fusion.ipynb).*
 
 ### 4. Rerankers · [notebook 06](notebooks/06_rerankers.ipynb)
 
 - 15 off-the-shelf rerankers on the hybrid's top 10, 20, 50 and 100.
-- Only zerank-2 helped: +0.9 at depth 10 (p = 0.008), at ~470 ms.
-- The rest got worse the deeper they reranked.
+- Only zerank-2 helped: +0.9 at depth 10, at ~470 ms. Not kept.
+- The rest got worse the more candidates they reranked.
 
-![Change in nDCG@10 as more candidates are reranked](docs/img/rerank_depth.png)
+![Change in nDCG@10 by reranking depth](docs/img/rerank_depth.png)
 
-### 5. Query and product expansion · [notebook 07](notebooks/07_expansion.ipynb)
+*Change against the hybrid alone, one line per model. Figure 2 in [notebook 06](notebooks/06_rerankers.ipynb).*
 
-| | The LLM adds | Model | Based on |
-|---|---|---|---|
-| P1 | searches a shopper might type | docTTTTTquery T5, Qwen3-8B | docTTTTTquery, Doc2Query-- |
-| P2 | words missing from the product text | Qwen3-8B | Doc2Token |
-| P3 | attributes: type, colour, material, style, room | Qwen3-8B | WDC-PAVE |
-| Q1 | keywords and synonyms | Qwen3-4B / 0.6B | Jagerman et al. 2023 |
-| Q2 | attributes the shopper implies | Qwen3-4B / 0.6B | BEQUE |
-| Q3 | an imagined matching product | Qwen3-4B / 0.6B | query2doc, HyDE |
-| Q4 | keywords after seeing the top 5 results | Qwen3-4B / 0.6B | LameR, CSQE |
+### 5. LLM expansion · [notebook 07](notebooks/07_expansion.ipynb)
 
-- Products expanded once, offline; queries live.
-- Two ways to use them: appended to the text, or as separate lists merged with RRF.
-- 1,530 tests across BM25, dense and hybrid.
-- BM25 improved in 296 of 510 combinations. Appended to dense or hybrid: never better.
-- Hybrid on dev: only P1 + Q4 as separate lists helped, up to +1.4. On test that top-10 gain mostly disappeared (see step 6).
-- Qwen3-0.6B was as good as 4B for queries; 7 combinations fit 500 ms on vLLM.
-- Why it works: not missing words (right products already hold 82% of the query's words), but two extra rankings nearly as good as the original.
+- Product side, generated once offline: P1 likely searches, P2 missing keywords, P3 attributes.
+- Query side, generated live: Q1 keywords, Q2 attributes, Q3 an imagined product, Q4 keywords after seeing the top 5 results.
+- Every combination, added to the text or as extra RRF lists: 1,530 tests. Qwen3-0.6B on vLLM was fast enough; the same model was ~70× faster on vLLM than in transformers.
 
 ![Significant wins and losses per system and mode](docs/img/expansion_wins_losses.png)
 
-![Hybrid with expansion, quality against latency](docs/img/expansion_latency.png)
+*Combinations significantly better (right) or worse (left) than the same system without expansion, out of 255 per row. Figure 1 in [notebook 07](notebooks/07_expansion.ipynb).*
 
 ### 6. Test set · [notebook 08](notebooks/08_test.ipynb)
 
-- Run once, on everything chosen on dev: BM25, inf-1.5B, arctic-m, the hybrid, and the 177 expansion combinations that were significant on dev.
-- Held: dense beats BM25 (+7.6), hybrid beats inf-1.5B (+1.9, p = 0.002), expansion helps BM25 (151 of 161).
-- Did not hold: expansion's top-10 gain on the hybrid (+0.1 to +0.8, none significant, against +0.9 to +1.4 on dev). Picking the best of hundreds of combinations on 241 queries overstated it.
-- New on test: the same 14 combinations raise recall in the top 100 by +0.8 to +2.2, all significant.
+- Run once, on everything chosen on dev.
+- Held: dense beats BM25, hybrid beats dense, expansion helps BM25.
+- Did not hold: expansion's top-10 gain on the hybrid (0 of 14 significant). It raised recall in the top 100 instead (14 of 14).
 
 ![Hybrid with expansion, dev against test](docs/img/test_expansion.png)
+
+*The 14 hybrid combinations chosen on dev, from dev (orange) to test (blue). Filled: significant. Figure 1 in [notebook 08](notebooks/08_test.ipynb).*
 
 ## Limits
 
 - One dataset, built around its 480 queries.
-- Rerankers and the 7B dense model were dropped on dev and not run on test.
-- Latency for one user; expanded-search pieces timed separately, not on one shared GPU.
-- No fine-tuning; all models off the shelf.
+- Latency for one user; expansion pieces timed separately, not on one shared GPU.
+- No fine-tuning.
 
 ## Next
 
-- Fine-tune an embedding model or reranker on synthetic queries for a small catalogue.
+- Fine-tune an embedding model or reranker on synthetic queries.
 - Move the expansion gain offline, into the product index.
-- Check the results on a larger catalogue (TREC Product Search 2023, 1.66M products).
-- Measure the full system on one shared GPU.
+- Check on a larger catalogue (TREC Product Search 2023, 1.66M products).
 
 ## Repository
 
@@ -135,7 +121,7 @@ scripts/              one entry point per experiment
 configs/              one YAML file per model or run
 notebooks/            01–08, one per step
 docs/evaluation.md    evaluation rules
-results/            metrics for every run (dev.csv, test.csv)
+results/              metrics for every run (dev.csv, test.csv)
 tests/                pytest
 ```
 
