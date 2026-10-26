@@ -51,6 +51,15 @@ This was an exploratory study in preparation for a possible master's thesis in s
 
 *Rcap@100 for every k1 and b. Every setting lands between 0.69 and 0.72, so we use the default (k1 0.9, b 0.4). Figure 2 in [notebook 03](notebooks/03_bm25.ipynb).*
 
+| Change from the best grid setting | Rcap@100 change | p | Decision |
+|---|---|---|---|
+| Stemming off | −4.5 | < 0.001 | keep stemming |
+| Description field removed | −5.6 | 0.001 | keep description |
+| Attributes field removed | −1.5 | 0.120 | leave out |
+| k1 and b reset to default | −0.6 | 0.215 | use default |
+
+*Change in points when one part is removed or reset. p99 latency 1.3 ms. Table 1 in [notebook 03](notebooks/03_bm25.ipynb).*
+
 ### 2. Dense retrieval · [notebook 04](notebooks/04_dense.ipynb)
 
 - 11 off-the-shelf embedding models, 33M to 7B parameters.
@@ -60,6 +69,17 @@ This was an exploratory study in preparation for a possible master's thesis in s
 ![Dense models, quality against latency](docs/img/dense_quality_latency.png)
 
 *Models significantly better than BM25 on at least one metric. Filled: significant on that metric. Figure 4 in [notebook 04](notebooks/04_dense.ipynb).*
+
+| Model | p99 | nDCG@10 | Change (p) | Rcap@100 change (p) | Picked |
+|---|---|---|---|---|---|
+| BM25 | 1.3 ms | 0.691 | – | – | baseline |
+| **inf-retriever-v1-1.5b** | **28 ms** | **0.759** | **+6.8 (< 0.001)** | **+5.9 (< 0.001)** | ✓ |
+| arctic-embed-m-v2.0 | 10 ms | 0.750 | +5.9 (< 0.001) | +3.0 (0.034) | in hybrid |
+| arctic-embed-l-v2.0 | 15 ms | 0.743 | +5.2 (< 0.001) | +1.2 (0.421) | |
+| pplx-embed-v1-4b | 48 ms | 0.739 | +4.8 (0.001) | +2.0 (0.201) | |
+| inf-retriever-v1-7b (8-bit) | 155 ms | 0.772 | +8.1 (< 0.001) | +7.3 (< 0.001) | ✗ too slow |
+
+*Change against BM25 in points, dev queries. Tables 2 and 6 in [notebook 04](notebooks/04_dense.ipynb).*
 
 ### 3. Hybrid · [notebook 05](notebooks/05_fusion.ipynb)
 
@@ -71,6 +91,17 @@ This was an exploratory study in preparation for a possible master's thesis in s
 
 *The 34 combinations within 50 ms against inf-1.5B alone (dashed). Green: significantly better, red: significantly worse. Figure 1 in [notebook 05](notebooks/05_fusion.ipynb).*
 
+| Combination | p99 | nDCG@10 | Change (p) | Rcap@100 change (p) | Picked |
+|---|---|---|---|---|---|
+| inf-1.5B alone | 28 ms | 0.759 | – | – | reference |
+| **BM25 + inf-1.5B + arctic-m** | **37 ms** | **0.780** | **+2.1 (0.004)** | **+1.0 (0.297)** | ✓ |
+| BM25 + inf-1.5B + mxbai | 42 ms | 0.776 | +1.7 (0.021) | +1.3 (0.187) | |
+| BM25 + inf-1.5B + arctic-l | 43 ms | 0.776 | +1.7 (0.024) | +0.4 (0.656) | |
+| inf-1.5B + arctic-m | 37 ms | 0.774 | +1.4 (0.006) | +0.1 (0.913) | |
+| BM25 + inf-1.5B | 28 ms | 0.772 | +1.3 (0.125) | +0.5 (0.619) | |
+
+*Change against inf-1.5B alone in points, dev queries. Table 2 in [notebook 05](notebooks/05_fusion.ipynb).*
+
 ### 4. Rerankers · [notebook 06](notebooks/06_rerankers.ipynb)
 
 - 15 off-the-shelf rerankers on the hybrid's top 10, 20, 50 and 100.
@@ -80,6 +111,17 @@ This was an exploratory study in preparation for a possible master's thesis in s
 ![Change in nDCG@10 by reranking depth](docs/img/rerank_depth.png)
 
 *Change against the hybrid alone, one line per model. Figure 2 in [notebook 06](notebooks/06_rerankers.ipynb).*
+
+| Reranker | Depth | Change (p) | Total p99 | Picked |
+|---|---|---|---|---|
+| none (hybrid, nDCG@10 0.780) | – | – | 37 ms | ✓ |
+| zerank-2 | top 10 | +0.9 (0.008) | ~464 ms | ✗ uses the whole budget |
+| zerank-2 | top 100 | +1.1 (0.254) | 4,300 ms | ✗ |
+| inf-retriever-v1 7B | top 100 | −0.1 (0.948) | 177 ms | |
+| GTE-ModernColBERT | top 100 | −1.8 (0.007) | 53 ms | |
+| bge-reranker-v2-m3 | top 100 | −4.0 (< 0.001) | 483 ms | |
+
+*Change in nDCG@10 against the hybrid alone in points, dev queries. Top-10 latency estimated from the top-100 run. Tables 2 and 4 in [notebook 06](notebooks/06_rerankers.ipynb).*
 
 ### 5. LLM expansion · [notebook 07](notebooks/07_expansion.ipynb)
 
@@ -91,6 +133,13 @@ This was an exploratory study in preparation for a possible master's thesis in s
 
 *Combinations significantly better (right) or worse (left) than the same system without expansion, out of 255 per row. Figure 1 in [notebook 07](notebooks/07_expansion.ipynb).*
 
+| System | Best expansion on dev | Dev: without → with | Change (q) | Test: without → with | Change (q) | p99 |
+|---|---|---|---|---|---|---|
+| BM25 | P1 all-T5 \| Q1 + Q4 | 0.691 → 0.737 | +4.6 (< 0.001) | 0.710 → 0.757 | +4.7 (< 0.001) | 333 ms |
+| Hybrid | P1 Qwen \| Q2 + Q3 + Q4 | 0.780 → 0.794 | +1.4 (< 0.001) | 0.804 → 0.808 | +0.3 (0.26) | 467 ms |
+
+*nDCG@10 of the same system without and with expansion; change in points. Expanded BM25 stays below inf-1.5B alone (0.786 on test, 28 ms). Table 3 in [notebook 08](notebooks/08_test.ipynb).*
+
 ### 6. Test set · [notebook 08](notebooks/08_test.ipynb)
 
 - Run once, on everything chosen on dev.
@@ -100,6 +149,16 @@ This was an exploratory study in preparation for a possible master's thesis in s
 ![Hybrid with expansion, dev against test](docs/img/test_expansion.png)
 
 *The 14 hybrid combinations chosen on dev, from dev (orange) to test (blue). Filled: significant. Figure 1 in [notebook 08](notebooks/08_test.ipynb).*
+
+| Finding | Dev | Test | Holds |
+|---|---|---|---|
+| inf-1.5B beats BM25 (nDCG@10) | +6.8 (p < 0.001) | +7.6 (p < 0.001) | ✓ |
+| Hybrid beats inf-1.5B (nDCG@10) | +2.1 (p = 0.004) | +1.9 (p = 0.002) | ✓ |
+| Expansion helps BM25 (nDCG@10) | 161 of 161 | 151 of 161 | ✓ |
+| Expansion helps the hybrid's top 10 (nDCG@10) | 14 of 14 | 0 of 14 | ✗ |
+| Expansion helps the hybrid's recall (Rcap@100) | 0 of 14 | 14 of 14 | ✓ (new) |
+
+*Pairs: change in points and p. Counts: combinations significantly better (q < 0.05). Table 2 in [notebook 08](notebooks/08_test.ipynb).*
 
 ## Limits
 
